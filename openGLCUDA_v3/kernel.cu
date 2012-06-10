@@ -95,7 +95,6 @@ static void key_func( unsigned char key, int x, int y ) {
             glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, 0 );
             glDeleteBuffers( 1, &bufferObj );
 			HANDLE_ERROR( cudaFree( dev_juliaClock ) );
-			cudaPrintfEnd();
             exit(0);
     }
 }

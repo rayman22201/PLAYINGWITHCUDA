@@ -39,8 +39,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>P:\openGLCUDA_v3\openGLCUDA_v3\inlcudes;$(IncludePath)</IncludePath>
-    <LibraryPath>P:\openGLCUDA_v3\openGLCUDA_v3\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildProjectDirectory)\inlcudes;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
