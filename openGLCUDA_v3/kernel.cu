@@ -21,6 +21,7 @@ PFNGLBUFFERDATAARBPROC    glBufferData     = NULL;
 static float juliaClock = 0;
 static int coin = 0;
 static float *dev_juliaClock;
+static int pause = 0;
 
 #define		DEBUG	0
 #if DEBUG == 1
@@ -58,13 +59,16 @@ __device__ int julia( int x, int y, float clk ) {
     cuComplex a(jx, jy);
 
     int i = 0;
+	float deviation = a.magnitude2();
     for (i=0; i<200; i++) {
         a = a * a + c;
         if (a.magnitude2() > 1000)
             return i;
     }
-
-	return -1; //-1 now means that it IS in the JuliaSet. 
+	deviation = deviation - a.magnitude2();
+	if(deviation > 0) { deviation = deviation * -1; }
+	else if(deviation == 0) { deviation = -1; } //special case to send to give correct color code. -1 and 0 should have the same color in this color scheme
+	return deviation; //negative values now means that it IS in the JuliaSet. 
 }
 
 // based on ripple code, but uses uchar4 which is the type of data
@@ -81,15 +85,19 @@ __global__ void kernel( uchar4 *ptr , float *clockVal, float *dbg ) {
 	int green = 0;
 	int blue = 0;
 	int alpha = 255;
+	if(juliaValue < 0) {
+		juliaValue = juliaValue * -1;
+		if(juliaValue < 100) { red = 0; green = 0; blue = 255; }
+		else if(juliaValue < 300) { red = 0; green = 127; blue = 255; }
+		else { red = 0; green = 255; blue = 0; }
 #if DEBUG == 1
-	dbg[offset] = juliaValue; //debug
+		dbg[offset] = juliaValue; //debug
 #endif
-	if(juliaValue == -1) {
-		blue = 255;
 	}
 	else
 	{
-		if(juliaValue < 10) { red = 0; green = 0; blue = 0; }
+		if(juliaValue == 0) { red = 0; green = 100; blue = 255; }
+		else if(juliaValue < 10) { red = 0; green = 0; blue = 0; }
 		else if(juliaValue < 66) { red = 0; green = 127; blue = 127; }
 		else if(juliaValue < 132) { red = 127; green = 127; blue = 0; }
 		else { red = 255; green = 0; blue = 0; }
@@ -104,8 +112,15 @@ __global__ void kernel( uchar4 *ptr , float *clockVal, float *dbg ) {
 
 //quit when esc is pressed
 static void key_func( unsigned char key, int x, int y ) {
-    switch (key) {
+    //printf("key: %d\n", key);
+	switch (key) {
+		case 112:
+			//pause button P
+			if(pause == 0) { pause = 1; }
+			else { pause = 0; }
+			break;
         case 27:
+			//esc key
             // clean up OpenGL and CUDA
             HANDLE_ERROR( cudaGraphicsUnregisterResource( resource ) );
             glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, 0 );
@@ -132,48 +147,50 @@ static void draw_func( void ) {
 
 //animation callback
 static void idle_func( void ) {
-	//update the animation clock
-	if( juliaClock > 0.5) { coin = 1; }
-	if( juliaClock < -0.5) { coin = 0; }
-	if( coin == 0 ) { juliaClock = juliaClock + 0.001; }
-	if( coin == 1 ) { juliaClock = juliaClock - 0.001; }
-	//move the clock value to the GPU -- just overwrites any old value
-	HANDLE_ERROR( cudaMemcpy( dev_juliaClock, &juliaClock, sizeof(float), cudaMemcpyHostToDevice ) );
+	if(pause != 1) {
+		//update the animation clock
+		if( juliaClock > 0.5) { coin = 1; }
+		if( juliaClock < -0.5) { coin = 0; }
+		if( coin == 0 ) { juliaClock = juliaClock + 0.001; }
+		if( coin == 1 ) { juliaClock = juliaClock - 0.001; }
+		//move the clock value to the GPU -- just overwrites any old value
+		HANDLE_ERROR( cudaMemcpy( dev_juliaClock, &juliaClock, sizeof(float), cudaMemcpyHostToDevice ) );
 	
-	// do work with the memory dst being on the GPU, gotten via mapping
-    HANDLE_ERROR( cudaGraphicsMapResources( 1, &resource, NULL ) );
-    uchar4* devPtr;
-    size_t  size;
-    HANDLE_ERROR( 
-        cudaGraphicsResourceGetMappedPointer( (void**)&devPtr, 
-                                              &size, 
-                                              resource) );
+		// do work with the memory dst being on the GPU, gotten via mapping
+		HANDLE_ERROR( cudaGraphicsMapResources( 1, &resource, NULL ) );
+		uchar4* devPtr;
+		size_t  size;
+		HANDLE_ERROR( 
+			cudaGraphicsResourceGetMappedPointer( (void**)&devPtr, 
+												  &size, 
+												  resource) );
 
-    dim3    grids(DIM/16,DIM/16);
-    dim3    threads(16,16);
-#if DEBUG == 0
-	float *dev_debug = 0;
-#endif
-    kernel<<<grids,threads>>>( devPtr , dev_juliaClock, dev_debug );
-    HANDLE_ERROR( cudaGraphicsUnmapResources( 1, &resource, NULL ) );
-	//----------------------------------------------------------------
-#if DEBUG == 1
-	//debug
-	HANDLE_ERROR( cudaMemcpy( &debug, dev_debug, (sizeof(float)*DIM*DIM), cudaMemcpyDeviceToHost ) );
-	fprintf(dbgOut,"Clock: %f array_copied\n",juliaClock);
-	int i, j = 0;
-	for(i = 0; i < DIM; i++) {
-		for(j = 0; j < DIM; j++) {
-			int dbgOffset = i + j*DIM;
-			if(debug[dbgOffset] != -1){
-				fprintf(dbgOut,"(%d,%d) JuliaValue: %f\n",i,j,debug[dbgOffset]);
+		dim3    grids(DIM/16,DIM/16);
+		dim3    threads(16,16);
+	#if DEBUG == 0
+		float *dev_debug = 0;
+	#endif
+		kernel<<<grids,threads>>>( devPtr , dev_juliaClock, dev_debug );
+		HANDLE_ERROR( cudaGraphicsUnmapResources( 1, &resource, NULL ) );
+		//----------------------------------------------------------------
+	#if DEBUG == 1
+		//debug
+		HANDLE_ERROR( cudaMemcpy( &debug, dev_debug, (sizeof(float)*DIM*DIM), cudaMemcpyDeviceToHost ) );
+		fprintf(dbgOut,"Clock: %f array_copied\n",juliaClock);
+		int i, j = 0;
+		for(i = 0; i < DIM; i++) {
+			for(j = 0; j < DIM; j++) {
+				int dbgOffset = i + j*DIM;
+				if(debug[dbgOffset] > 0){
+					fprintf(dbgOut,"(%d,%d) JuliaValue: %f\n",i,j,debug[dbgOffset]);
+				}
 			}
 		}
+		fprintf(dbgOut,"----------------------------------------------\n\n");
+	#endif
+		//force redisplay
+		glutPostRedisplay();
 	}
-	fprintf(dbgOut,"----------------------------------------------\n\n");
-#endif
-	//force redisplay
-	glutPostRedisplay();
 }
 
 
