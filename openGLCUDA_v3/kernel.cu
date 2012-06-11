@@ -1,6 +1,7 @@
 // OpenGL CUDA implementation of Julia Set. Try 3 X.X
 // By Ray Imber a.k.a rayman22201
 // Based off the book "CUDA by example"
+// algorithm used for the colorscheme was inspired by http://www.jcu.edu/math/vignettes/Julia.htm
 
 #include "book.h" //includes stdio for me
 #include "gl_helper.h"
@@ -14,17 +15,20 @@ PFNGLDELETEBUFFERSARBPROC glDeleteBuffers  = NULL;
 PFNGLGENBUFFERSARBPROC    glGenBuffers     = NULL;
 PFNGLBUFFERDATAARBPROC    glBufferData     = NULL;
 
-#define     DIM    512
+#define     DIM    1024
 
 //animation clock
 static float juliaClock = 0;
 static int coin = 0;
 static float *dev_juliaClock;
 
+#define		DEBUG	0
+#if DEBUG == 1
 //debug float array
 static float debug[(DIM*DIM)];
 static float* dev_debug;
 static FILE *dbgOut;
+#endif
 
 GLuint  bufferObj;
 cudaGraphicsResource *resource;
@@ -57,10 +61,10 @@ __device__ int julia( int x, int y, float clk ) {
     for (i=0; i<200; i++) {
         a = a * a + c;
         if (a.magnitude2() > 1000)
-            return -1;
+            return i;
     }
 
-	return a.magnitude2();
+	return -1; //-1 now means that it IS in the JuliaSet. 
 }
 
 // based on ripple code, but uses uchar4 which is the type of data
@@ -77,16 +81,18 @@ __global__ void kernel( uchar4 *ptr , float *clockVal, float *dbg ) {
 	int green = 0;
 	int blue = 0;
 	int alpha = 255;
+#if DEBUG == 1
 	dbg[offset] = juliaValue; //debug
-	if( juliaValue != -1 )
+#endif
+	if(juliaValue == -1) {
+		blue = 255;
+	}
+	else
 	{
-		//scale the julia value to be more useful for a color space.
-		juliaValue = juliaValue * 1000000000;
-		if((int)juliaValue < 10) { blue = 255; }
-		else if((int)juliaValue < 50) { green = 255; }
-		else { red = 255; }
-		//debugging
-		//printf("point ( %d , %d ) JuliaValue = %d \n",x,y,((int)juliaValue));
+		if(juliaValue < 10) { red = 0; green = 0; blue = 0; }
+		else if(juliaValue < 66) { red = 0; green = 127; blue = 127; }
+		else if(juliaValue < 132) { red = 127; green = 127; blue = 0; }
+		else { red = 255; green = 0; blue = 0; }
 	}
 
     // accessing uchar4 vs unsigned char*
@@ -105,8 +111,10 @@ static void key_func( unsigned char key, int x, int y ) {
             glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, 0 );
             glDeleteBuffers( 1, &bufferObj );
 			HANDLE_ERROR( cudaFree( dev_juliaClock ) );
+#if DEBUG == 1
 			HANDLE_ERROR( cudaFree( dev_debug ) ); //debug
 			fclose(dbgOut);
+#endif
             exit(0);
     }
 }
@@ -143,10 +151,13 @@ static void idle_func( void ) {
 
     dim3    grids(DIM/16,DIM/16);
     dim3    threads(16,16);
+#if DEBUG == 0
+	float *dev_debug = 0;
+#endif
     kernel<<<grids,threads>>>( devPtr , dev_juliaClock, dev_debug );
     HANDLE_ERROR( cudaGraphicsUnmapResources( 1, &resource, NULL ) );
 	//----------------------------------------------------------------
-
+#if DEBUG == 1
 	//debug
 	HANDLE_ERROR( cudaMemcpy( &debug, dev_debug, (sizeof(float)*DIM*DIM), cudaMemcpyDeviceToHost ) );
 	fprintf(dbgOut,"Clock: %f array_copied\n",juliaClock);
@@ -160,6 +171,7 @@ static void idle_func( void ) {
 		}
 	}
 	fprintf(dbgOut,"----------------------------------------------\n\n");
+#endif
 	//force redisplay
 	glutPostRedisplay();
 }
@@ -208,11 +220,12 @@ int main( int argc, char **argv ) {
 
 	HANDLE_ERROR( cudaMalloc( (void**)&dev_juliaClock, sizeof(float) ) );
 	//-------------------------------------------------------------------------------------------
-
+#if DEBUG == 1
 	//debug
 	HANDLE_ERROR( cudaMalloc( (void**)&dev_debug, (sizeof(float)*DIM*DIM) ) );
 	HANDLE_ERROR( cudaMemset(dev_debug,0,(sizeof(float)*DIM*DIM)) );
 	dbgOut = fopen("JuliaDebug.txt","a+");
+#endif
 
     // set up GLUT and kick off main loop
     glutKeyboardFunc( key_func );
