@@ -1,9 +1,9 @@
-﻿Build started 6/10/2012 5:12:53 PM.
+﻿Build started 6/11/2012 10:10:03 AM.
      1>Project "P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3\openGLCUDA_v3.vcxproj" on node 2 (rebuild target(s)).
      1>_PrepareForClean:
          Deleting file "Debug\openGLCUDA_v3.lastbuildstate".
        CudaClean:
-         cmd.exe /C "C:\Users\rlimber.SALISBURY\AppData\Local\Temp\06a5b95b1fc0425c80ad3a204da20bec.cmd"
+         cmd.exe /C "C:\Users\rlimber\AppData\Local\Temp\9f6b924ca49a45c2afb71a93cdca4dc5.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\include"  -G  --keep-dir "Debug" -maxrregcount=0  --machine 32 --compile  -g    -Xcompiler "/EHsc /nologo /Od /Zi  /MDd  " -o "Debug\kernel.cu.obj" "P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3\kernel.cu" -clean
          
          P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\include"  -G  --keep-dir "Debug" -maxrregcount=0  --machine 32 --compile  -g    -Xcompiler "/EHsc /nologo /Od /Zi  /MDd  " -o "Debug\kernel.cu.obj" "P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3\kernel.cu" -clean 
@@ -42,16 +42,16 @@
          Found "CommandLineTemplate".
        CudaBuild:
          Compiling CUDA source file kernel.cu...
-         cmd.exe /C "C:\Users\rlimber.SALISBURY\AppData\Local\Temp\ea8d82aa554142de9d3c5946bf6eb46f.cmd"
+         cmd.exe /C "C:\Users\rlimber\AppData\Local\Temp\d064e7fa43de491f8195fa4180b3cd62.cmd"
          "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\include"  -G  --keep-dir "Debug" -maxrregcount=0  --machine 32 --compile  -g    -Xcompiler "/EHsc /nologo /Od /Zi  /MDd  " -o "Debug\kernel.cu.obj" "P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3\kernel.cu"
          
          P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2010 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin"  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v4.2\include"  -G  --keep-dir "Debug" -maxrregcount=0  --machine 32 --compile  -g    -Xcompiler "/EHsc /nologo /Od /Zi  /MDd  " -o "Debug\kernel.cu.obj" "P:\GIT_Repos\PLAYINGWITHCUDA\openGLCUDA_v3\kernel.cu" 
          kernel.cu
-         tmpxft_00001300_00000000-0_kernel.cudafe1.gpu
-         tmpxft_00001300_00000000-5_kernel.cudafe2.gpu
+         tmpxft_0000083c_00000000-0_kernel.cudafe1.gpu
+         tmpxft_0000083c_00000000-5_kernel.cudafe2.gpu
          kernel.cu
-         tmpxft_00001300_00000000-0_kernel.cudafe1.cpp
-         tmpxft_00001300_00000000-11_kernel.ii
+         tmpxft_0000083c_00000000-0_kernel.cudafe1.cpp
+         tmpxft_0000083c_00000000-11_kernel.ii
        ManifestResourceCompile:
          C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /nologo /fo"Debug\openGLCUDA_v3.exe.embed.manifest.res" Debug\openGLCUDA_v3_manifest.rc 
        Link:
@@ -80,4 +80,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:13.71
+Time Elapsed 00:00:16.13

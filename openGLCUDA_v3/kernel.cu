@@ -14,12 +14,17 @@ PFNGLDELETEBUFFERSARBPROC glDeleteBuffers  = NULL;
 PFNGLGENBUFFERSARBPROC    glGenBuffers     = NULL;
 PFNGLBUFFERDATAARBPROC    glBufferData     = NULL;
 
-#define     DIM    1024
+#define     DIM    512
 
 //animation clock
 static float juliaClock = 0;
 static int coin = 0;
 static float *dev_juliaClock;
+
+//debug float array
+static float debug[(DIM*DIM)];
+static float* dev_debug;
+static FILE *dbgOut;
 
 GLuint  bufferObj;
 cudaGraphicsResource *resource;
@@ -60,7 +65,7 @@ __device__ int julia( int x, int y, float clk ) {
 
 // based on ripple code, but uses uchar4 which is the type of data
 // graphic inter op uses. see screenshot - basic2.png
-__global__ void kernel( uchar4 *ptr , float *clockVal ) {
+__global__ void kernel( uchar4 *ptr , float *clockVal, float *dbg ) {
     // map from threadIdx/BlockIdx to pixel position
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -72,6 +77,7 @@ __global__ void kernel( uchar4 *ptr , float *clockVal ) {
 	int green = 0;
 	int blue = 0;
 	int alpha = 255;
+	dbg[offset] = juliaValue; //debug
 	if( juliaValue != -1 )
 	{
 		//scale the julia value to be more useful for a color space.
@@ -99,6 +105,8 @@ static void key_func( unsigned char key, int x, int y ) {
             glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, 0 );
             glDeleteBuffers( 1, &bufferObj );
 			HANDLE_ERROR( cudaFree( dev_juliaClock ) );
+			HANDLE_ERROR( cudaFree( dev_debug ) ); //debug
+			fclose(dbgOut);
             exit(0);
     }
 }
@@ -135,10 +143,23 @@ static void idle_func( void ) {
 
     dim3    grids(DIM/16,DIM/16);
     dim3    threads(16,16);
-    kernel<<<grids,threads>>>( devPtr , dev_juliaClock );
+    kernel<<<grids,threads>>>( devPtr , dev_juliaClock, dev_debug );
     HANDLE_ERROR( cudaGraphicsUnmapResources( 1, &resource, NULL ) );
 	//----------------------------------------------------------------
 
+	//debug
+	HANDLE_ERROR( cudaMemcpy( &debug, dev_debug, (sizeof(float)*DIM*DIM), cudaMemcpyDeviceToHost ) );
+	fprintf(dbgOut,"Clock: %f array_copied\n",juliaClock);
+	int i, j = 0;
+	for(i = 0; i < DIM; i++) {
+		for(j = 0; j < DIM; j++) {
+			int dbgOffset = i + j*DIM;
+			if(debug[dbgOffset] != -1){
+				fprintf(dbgOut,"(%d,%d) JuliaValue: %f\n",i,j,debug[dbgOffset]);
+			}
+		}
+	}
+	fprintf(dbgOut,"----------------------------------------------\n\n");
 	//force redisplay
 	glutPostRedisplay();
 }
@@ -187,6 +208,11 @@ int main( int argc, char **argv ) {
 
 	HANDLE_ERROR( cudaMalloc( (void**)&dev_juliaClock, sizeof(float) ) );
 	//-------------------------------------------------------------------------------------------
+
+	//debug
+	HANDLE_ERROR( cudaMalloc( (void**)&dev_debug, (sizeof(float)*DIM*DIM) ) );
+	HANDLE_ERROR( cudaMemset(dev_debug,0,(sizeof(float)*DIM*DIM)) );
+	dbgOut = fopen("JuliaDebug.txt","a+");
 
     // set up GLUT and kick off main loop
     glutKeyboardFunc( key_func );
