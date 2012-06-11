@@ -2,7 +2,7 @@
 // By Ray Imber a.k.a rayman22201
 // Based off the book "CUDA by example"
 
-#include "book.h"
+#include "book.h" //includes stdio for me
 #include "gl_helper.h"
 #include "stdlib.h"
 
@@ -74,9 +74,13 @@ __global__ void kernel( uchar4 *ptr , float *clockVal ) {
 	int alpha = 255;
 	if( juliaValue != -1 )
 	{
-		red = 100;
-		green = 100;
-		blue = abs((int)(500 * (*clockVal)));
+		//scale the julia value to be more useful for a color space.
+		juliaValue = juliaValue * 1000000000;
+		if((int)juliaValue < 10) { blue = 255; }
+		else if((int)juliaValue < 50) { green = 255; }
+		else { red = 255; }
+		//debugging
+		//printf("point ( %d , %d ) JuliaValue = %d \n",x,y,((int)juliaValue));
 	}
 
     // accessing uchar4 vs unsigned char*
